@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>매출·이익률 계산기</title>
+<style>
+:root{
+  --blue:#185FA5;--blue-lt:#E6F1FB;--blue-md:#85B7EB;
+  --purple:#534AB7;--purple-lt:#EEEDFE;--purple-md:#AFA9EC;
+  --teal:#0F6E56;--teal-lt:#E1F5EE;--teal-md:#5DCAA5;
+  --amber:#854F0B;--amber-lt:#FAEEDA;--amber-md:#EF9F27;
+  --coral:#993C1D;--coral-lt:#FAECE7;
+  --green:#3B6D11;--green-lt:#EAF3DE;--green-md:#97C459;
+  --red:#A32D2D;--red-lt:#FCEBEB;
+  --border:#e0ddd6;--bg:#f5f5f3;--card:#fff;
+  --text:#1a1a1a;--muted:#5F5E5A;--hint:#aaa;
+  --radius:12px;--radius-sm:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* ── 상단바 ── */
+.topbar{background:#fff;border-bottom:1px solid var(--border);padding:14px 32px;position:sticky;top:0;z-index:20;display:flex;flex-direction:column;gap:10px}
+.topbar-row1{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.topbar h1{font-size:17px;font-weight:700;white-space:nowrap}
+.tabs{display:flex;background:var(--bg);border-radius:var(--radius-sm);padding:3px;gap:0}
+.tab{padding:8px 28px;font-size:13px;font-weight:600;border:none;cursor:pointer;border-radius:6px;background:transparent;color:var(--muted);transition:all .2s}
+.tab.t-fwd.active{background:var(--blue);color:#fff}
+.tab.t-rev.active{background:var(--purple);color:#fff}
+
+/* 상품코드 바 */
+.codebar{display:flex;align-items:center;gap:10px}
+.codebar label{font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;letter-spacing:.03em}
+.codebar input{flex:1;max-width:320px;height:34px;padding:0 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:monospace;color:var(--text);background:#fff;letter-spacing:.04em;transition:border-color .15s}
+.codebar input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(24,95,165,.1)}
+.codebar input::placeholder{color:var(--hint);font-family:inherit;letter-spacing:0}
+.btn{height:34px;padding:0 16px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;background:#fff;color:var(--muted);transition:all .15s;white-space:nowrap}
+.btn:hover{border-color:#bbb;background:var(--bg)}
+.btn.btn-save{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn.btn-save:hover{background:#0C447C;border-color:#0C447C}
+.btn.btn-dl{background:var(--green-lt);color:var(--green);border-color:var(--green-md)}
+.btn.btn-dl:hover{background:#d4eabc}
+
+/* ── 본문 그리드 ── */
+.content{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:1100px;margin:0 auto;padding:24px 32px;align-items:start}
+
+/* ── 섹션 카드 ── */
+.sec{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:18px;margin-bottom:14px}
+.sec-blue{background:#f0f6fd;border-color:var(--blue-md)}
+.sec-teal{background:#edf9f4;border-color:var(--teal-md)}
+.sec-purple{background:#f5f4fe;border-color:var(--purple-md)}
+.sec-gray{background:var(--card);border-color:var(--border)}
+.stitle{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px}
+.c-blue{color:var(--blue)}.c-purple{color:var(--purple)}.c-teal{color:var(--teal)}.c-gray{color:var(--muted)}.c-green{color:var(--green)}
+
+/* ── 입력 행 ── */
+.mbtn-wrap{display:flex;gap:8px;margin-bottom:14px}
+.mbtn{flex:1;padding:9px;font-size:13px;font-weight:500;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--card);color:var(--muted);cursor:pointer;transition:all .15s}
+.mbtn:hover{border-color:#bbb}
+.mbtn-blue.active{background:var(--blue-lt);color:var(--blue);border-color:var(--blue-md);font-weight:700}
+.mbtn-purple.active{background:var(--purple-lt);color:var(--purple);border-color:var(--purple-md);font-weight:700}
+.row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.row label{font-size:13px;color:var(--muted);min-width:120px;flex-shrink:0}
+.row input{flex:1;height:36px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:#fff;color:var(--text);font-size:14px;transition:border-color .15s}
+.row input:hover{border-color:#bbb}
+.row input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(24,95,165,.1)}
+.row input::placeholder{color:var(--hint)}
+.unit{font-size:13px;color:var(--hint);min-width:24px;flex-shrink:0}
+.sep{border:none;border-top:1px dashed var(--border);margin:12px 0}
+.sub-lbl{font-size:11px;font-weight:700;color:var(--hint);margin-bottom:8px;letter-spacing:.05em;text-transform:uppercase}
+.ag-box{background:var(--amber-lt);border:1px solid var(--amber-md);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;gap:8px}
+.ag-lbl{font-size:11px;color:var(--amber);font-weight:500}
+.ag-val{font-size:14px;font-weight:700;color:#412402;margin-top:2px}
+
+/* ── 결과 카드 ── */
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.metric{border-radius:var(--radius-sm);padding:14px}
+.m-blue{background:var(--blue-lt)}.m-purple{background:var(--purple-lt)}
+.m-teal{background:var(--teal-lt)}.m-coral{background:var(--coral-lt)}.m-amber{background:var(--amber-lt)}
+.mlbl{font-size:11px;font-weight:600;margin-bottom:5px}
+.mlbl.c-blue{color:var(--blue)}.mlbl.c-purple{color:var(--purple)}
+.mlbl.c-teal{color:var(--teal)}.mlbl.c-coral{color:var(--coral)}.mlbl.c-amber{color:var(--amber)}
+.mval{font-size:18px;font-weight:700}
+.mval.c-blue{color:#0C447C}.mval.c-purple{color:#3C3489}
+.mval.c-teal{color:#085041}.mval.c-coral{color:#712B13}.mval.c-amber{color:#633806}
+.mval.ok{color:#085041}.mval.ng{color:var(--red)}
+.rbox{border-radius:var(--radius);padding:20px;margin-bottom:14px}
+.rbox-ok{background:var(--teal-lt);border:1px solid var(--teal-md)}
+.rbox-warn{background:var(--amber-lt);border:1px solid var(--amber-md)}
+.rbig{font-size:40px;font-weight:800;margin:6px 0;letter-spacing:-.5px}
+.rbox-ok .rbig{color:#085041}
+.rbox-warn .rbig{color:#633806}
+.rsub{font-size:13px;color:var(--muted)}
+.divider{border:none;border-top:1px solid var(--border);margin:8px 0}
+.cr{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--muted);padding:4px 0;gap:12px}
+.crv{font-weight:600;color:var(--text);text-align:right;flex-shrink:0}
+.cr.ind{padding-left:14px;font-size:12px;color:var(--hint)}
+.cr.ind .crv{color:#666}
+.cr.bld{font-size:14px;font-weight:700;color:var(--text)}
+.cr.bld .crv{color:var(--text)}
+.cr.ag{color:var(--amber)}.cr.ag .crv{color:#412402}
+.add-btn{width:100%;padding:9px;border:1px dashed var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--muted);font-size:13px;cursor:pointer;margin-top:8px}
+.add-btn:hover{background:var(--bg)}
+.ex-row{display:flex;gap:6px;margin-bottom:6px;align-items:center}
+.ex-row input{flex:1;height:34px;padding:0 8px;border:1px solid var(--border);border-radius:var(--radius-sm);background:#fff;color:var(--text);font-size:13px}
+.rm{width:32px;height:34px;border:none;background:transparent;color:var(--hint);cursor:pointer;font-size:18px;border-radius:var(--radius-sm)}
+.rm:hover{background:var(--red-lt);color:var(--red)}
+
+/* ── 저장 목록 ── */
+.records-wrap{max-width:1100px;margin:0 auto 32px;padding:0 32px}
+.records-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.records-header h2{font-size:14px;font-weight:700;color:var(--text)}
+.dl-row{display:flex;align-items:center;gap:8px}
+.dl-row input{height:34px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:monospace;letter-spacing:.04em;width:220px;background:#fff;color:var(--text)}
+.dl-row input:focus{outline:none;border-color:var(--green)}
+.records-table{width:100%;border-collapse:collapse;background:#fff;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);font-size:13px}
+.records-table th{background:var(--bg);color:var(--muted);font-weight:600;font-size:11px;letter-spacing:.04em;text-transform:uppercase;padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+.records-table td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:middle;color:var(--text)}
+.records-table tr:last-child td{border-bottom:none}
+.records-table tr:hover td{background:#fafaf8}
+.code-pill{font-family:monospace;font-size:12px;letter-spacing:.04em;background:var(--blue-lt);color:var(--blue);padding:3px 8px;border-radius:4px;font-weight:600}
+.tag{font-size:11px;padding:2px 7px;border-radius:4px;font-weight:600}
+.tag-album{background:var(--blue-lt);color:var(--blue)}
+.tag-ticket{background:var(--purple-lt);color:var(--purple)}
+.tag-fwd{background:var(--teal-lt);color:var(--teal)}
+.tag-rev{background:var(--amber-lt);color:var(--amber)}
+.tbl-btn{height:28px;padding:0 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;background:#fff;color:var(--muted)}
+.tbl-btn:hover{background:var(--bg)}
+.tbl-btn.del:hover{background:var(--red-lt);color:var(--red);border-color:var(--red)}
+.tbl-btn.load{color:var(--blue);border-color:var(--blue-md)}
+.tbl-btn.load:hover{background:var(--blue-lt)}
+.empty-msg{text-align:center;color:var(--hint);padding:32px;font-size:13px}
+
+/* ── 토스트 ── */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(10px);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;opacity:0;transition:all .3s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.hidden{display:none}
+@media(max-width:720px){
+  .content{grid-template-columns:1fr;padding:16px 14px;gap:0}
+  .topbar{padding:14px 16px}
+  .topbar-row1{flex-wrap:wrap}
+  .codebar{flex-wrap:wrap}
+  .records-wrap{padding:0 14px}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-row1">
+    <h1>매출·이익률 계산기</h1>
+    <div class="tabs">
+      <button class="tab t-fwd active" onclick="switchTab('f')">매출·이익 계산</button>
+      <button class="tab t-rev" onclick="switchTab('r')">최소 판매량 역산</button>
+    </div>
+  </div>
+  <div class="codebar">
+    <label>상품코드</label>
+    <input type="text" id="product-code" placeholder="예: P_10312_NOUERA_30" style="font-family:monospace"/>
+    <button class="btn btn-save" onclick="saveRecord()">저장</button>
+    <div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div>
+    <label style="color:var(--muted);font-size:12px;font-weight:600">코드 앞자리로 묶음 다운로드</label>
+    <input type="text" id="dl-prefix" placeholder="예: P_10312_" style="width:160px;font-family:monospace;height:34px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;letter-spacing:.04em"/>
+    <button class="btn btn-dl" onclick="downloadByPrefix()">CSV 다운로드</button>
+  </div>
+</div>
+
+<!-- ===== 정방향 ===== -->
+<div class="content" id="pane-f">
+  <div>
+    <div class="sec sec-blue">
+      <p class="stitle c-blue">판매 방식</p>
+      <div class="mbtn-wrap">
+        <button class="mbtn mbtn-blue active" id="f-ba" onclick="setFM('album')">앨범 판매</button>
+        <button class="mbtn mbtn-blue" id="f-bt" onclick="setFM('ticket')">응모권 판매</button>
+      </div>
+      <div class="row"><label id="f-pl">앨범 판매가</label><input type="number" id="f-sell" placeholder="판매가 입력" min="0" oninput="cF()"/><span class="unit">원</span></div>
+      <div class="row" id="f-cr"><label>앨범 출고가</label><input type="number" id="f-cost" placeholder="출고가 입력" min="0" oninput="cF()"/><span class="unit">원</span></div>
+      <div class="mbtn-wrap" style="margin-bottom:10px">
+        <button class="mbtn mbtn-blue active" id="f-input-qty" onclick="setFInput('qty')">판매량 입력</button>
+        <button class="mbtn mbtn-blue" id="f-input-rev" onclick="setFInput('rev')">총 매출 직접 입력</button>
+      </div>
+      <div class="row" id="f-row-qty"><label>판매량</label><input type="number" id="f-qty" placeholder="수량 입력" min="0" oninput="cF()"/><span class="unit">개</span></div>
+      <div class="row hidden" id="f-row-rev"><label>총 매출</label><input type="number" id="f-rev-input" placeholder="매출 직접 입력" min="0" oninput="cF()"/><span class="unit">원</span></div>
+      <div class="row hidden" id="f-row-qty-disp" style="opacity:.7"><label style="font-size:12px">계산된 판매량</label><div style="flex:1;height:36px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--muted);font-size:14px;display:flex;align-items:center" id="f-qty-disp">-</div><span class="unit">개</span></div>
+    </div>
+    <div class="sec sec-teal">
+      <p class="stitle c-teal">비용</p>
+      <div id="f-ag-block" class="hidden">
+        <p class="sub-lbl">① PG사 수수료 — 전체 매출 기준</p>
+        <div class="row"><label>PG사 수수료</label><input type="number" id="f-pg" value="3.3" min="0" max="100" step="0.1" oninput="cF()"/><span class="unit">%</span></div>
+        <div class="ag-box"><div><div class="ag-lbl">PG 차감 후 금액</div><div class="ag-val" id="f-after-pg">-</div></div></div>
+        <div class="sep"></div>
+        <p class="sub-lbl">② 소속사 / 우리 회사 정산 — PG 차감 후 기준</p>
+        <div class="row"><label>소속사 정산 비율</label><input type="number" id="f-ar" value="50" min="0" max="100" step="0.1" oninput="cF()"/><span class="unit">%</span></div>
+        <div class="ag-box">
+          <div><div class="ag-lbl">소속사 정산액</div><div class="ag-val" id="f-ag-amt">-</div></div>
+          <div style="text-align:right"><div class="ag-lbl">우리 회사 귀속</div><div class="ag-val" id="f-our-rev">-</div></div>
+        </div>
+        <div class="sep"></div>
+        <p class="sub-lbl">③ 우리 회사 운영 비용</p>
+      </div>
+      <div id="f-basic-pg" class="row"><label>PG사 수수료</label><input type="number" id="f-pg-b" value="3.3" min="0" max="100" step="0.1" oninput="cF()"/><span class="unit">%</span></div>
+      <div class="row"><label>아르바이트 인원</label><input type="number" id="f-staff" placeholder="인원 입력" min="0" oninput="cF()"/><span class="unit">명</span></div>
+      <div class="row"><label>근무 시간</label><input type="number" id="f-hours" placeholder="시간 입력" min="0" step="0.5" oninput="cF()"/><span class="unit">원</span></div>
+      <div class="row"><label>시급</label><input type="number" id="f-wage" value="11000" min="0" oninput="cF()"/><span class="unit">원</span></div>
+      <div class="row"><label>경호비</label><input type="number" id="f-sec" value="0" min="0" oninput="cF()"/><span class="unit">원</span></div>
+      <div class="row"><label>대관비</label><input type="number" id="f-venue" value="0" min="0" oninput="cF()"/><span class="unit">원</span></div>
+      <div class="row"><label>제작비</label><input type="number" id="f-prod" value="0" min="0" oninput="cF()"/><span class="unit">원</span></div>
+      <div id="f-extras"></div>
+      <button class="add-btn" onclick="addE('f')">+ 항목 추가</button>
+    </div>
+  </div>
+  <div>
+    <div class="metrics">
+      <div class="metric m-blue"><div class="mlbl c-blue">총 매출</div><div class="mval c-blue" id="f-rev">-</div></div>
+      <div class="metric m-amber"><div class="mlbl c-amber" id="f-cl">총 비용</div><div class="mval c-amber" id="f-tc">-</div></div>
+      <div class="metric m-teal"><div class="mlbl c-teal">순이익</div><div class="mval" id="f-profit">-</div></div>
+      <div class="metric m-coral"><div class="mlbl c-coral">이익률</div><div class="mval" id="f-margin">-</div></div>
+    </div>
+    <div class="sec sec-gray"><p class="stitle c-gray">비용 내역</p><div id="f-bd"></div></div>
+  </div>
+</div>
+
+<!-- ===== 역산 ===== -->
+<div class="content hidden" id="pane-r">
+  <div>
+    <div class="sec sec-purple">
+      <p class="stitle c-purple">판매 방식</p>
+      <div class="mbtn-wrap">
+        <button class="mbtn mbtn-purple active" id="r-ba" onclick="setRM('album')">앨범 판매</button>
+        <button class="mbtn mbtn-purple" id="r-bt" onclick="setRM('ticket')">응모권 판매</button>
+      </div>
+      <div class="row"><label id="r-pl">앨범 판매가</label><input type="number" id="r-sell" placeholder="판매가 입력" min="0" oninput="cR()"/><span class="unit">원</span></div>
+      <div class="row" id="r-cr"><label>앨범 출고가</label><input type="number" id="r-cost" placeholder="출고가 입력" min="0" oninput="cR()"/><span class="unit">원</span></div>
+      <div class="sep"></div>
+      <p class="sub-lbl" style="margin-bottom:10px">목표 기준 선택</p>
+      <div class="mbtn-wrap">
+        <button class="mbtn mbtn-purple active" id="r-mode-rate" onclick="setRGoal('rate')">이익률 기준</button>
+        <button class="mbtn mbtn-purple" id="r-mode-amt" onclick="setRGoal('amt')">순이익 금액 기준</button>
+      </div>
+      <div class="row" id="r-row-rate"><label>목표 이익률</label><input type="number" id="r-target" value="30" min="0" max="99" step="0.1" oninput="cR()"/><span class="unit">%</span></div>
+      <div class="row hidden" id="r-row-amt"><label>목표 순이익</label><input type="number" id="r-profit-goal" placeholder="금액 입력" min="0" oninput="cR()"/><span class="unit">원</span></div>
+    </div>
+    <div class="sec sec-teal">
+      <p class="stitle c-teal">비용</p>
+      <div id="r-ag-block" class="hidden">
+        <p class="sub-lbl">① PG사 수수료 — 전체 매출 기준</p>
+        <div class="row"><label>PG사 수수료</label><input type="number" id="r-pg" value="3.3" min="0" max="100" step="0.1" oninput="cR()"/><span class="unit">%</span></div>
+        <div class="sep"></div>
+        <p class="sub-lbl">② 소속사 / 우리 회사 정산 — PG 차감 후 기준</p>
+        <div class="row"><label>소속사 정산 비율</label><input type="number" id="r-ar" value="50" min="0" max="100" step="0.1" oninput="cR()"/><span class="unit">%</span></div>
+        <div class="sep"></div>
+        <p class="sub-lbl">③ 우리 회사 운영 비용</p>
+      </div>
+      <div id="r-basic-pg" class="row"><label>PG사 수수료</label><input type="number" id="r-pg-b" value="3.3" min="0" max="100" step="0.1" oninput="cR()"/><span class="unit">%</span></div>
+      <div class="row"><label>아르바이트 인원</label><input type="number" id="r-staff" placeholder="인원 입력" min="0" oninput="cR()"/><span class="unit">명</span></div>
+      <div class="row"><label>근무 시간</label><input type="number" id="r-hours" placeholder="시간 입력" min="0" step="0.5" oninput="cR()"/><span class="unit">시간</span></div>
+      <div class="row"><label>시급</label><input type="number" id="r-wage" value="11000" min="0" oninput="cR()"/><span class="unit">원</span></div>
+      <div class="row"><label>경호비</label><input type="number" id="r-sec" value="0" min="0" oninput="cR()"/><span class="unit">원</span></div>
+      <div class="row"><label>대관비</label><input type="number" id="r-venue" value="0" min="0" oninput="cR()"/><span class="unit">원</span></div>
+      <div class="row"><label>제작비</label><input type="number" id="r-prod" value="0" min="0" oninput="cR()"/><span class="unit">원</span></div>
+      <div id="r-extras"></div>
+      <button class="add-btn" onclick="addE('r')">+ 항목 추가</button>
+    </div>
+  </div>
+  <div>
+    <div class="rbox rbox-ok" id="r-rbox">
+      <div class="rsub" id="r-rbox-label">목표 이익률 달성을 위한 최소 판매량</div>
+      <div class="rbig" id="r-minqty">-</div>
+      <div class="rsub" id="r-rsub2">판매가와 비용을 입력하면 자동 계산됩니다</div>
+    </div>
+    <div class="metrics">
+      <div class="metric m-purple"><div class="mlbl c-purple">최소 매출</div><div class="mval c-purple" id="r-minrev">-</div></div>
+      <div class="metric m-amber"><div class="mlbl c-amber">고정 비용</div><div class="mval c-amber" id="r-fc">-</div></div>
+      <div class="metric m-teal" style="grid-column:span 2"><div class="mlbl c-teal">개당 공헌이익</div><div class="mval c-teal" id="r-uc">-</div></div>
+    </div>
+    <div class="sec sec-gray"><p class="stitle c-gray">역산 내역</p><div id="r-bd"></div></div>
+  </div>
+</div>
+
+<!-- ===== 저장 목록 ===== -->
+<div class="records-wrap">
+  <div class="records-header">
+    <h2>저장된 항목 <span id="rec-count" style="color:var(--hint);font-weight:400;font-size:13px"></span></h2>
+  </div>
+  <div id="records-list"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let fM='album', rM='album', rGoal='rate';
+let fEx=[], rEx=[], eid=0;
+let lastFResult={}, lastRResult={};
+
+/* ── 탭 / 모드 ── */
+let fInputMode='qty';
+function setFInput(m){
+  fInputMode=m;
+  document.getElementById('f-input-qty').classList.toggle('active',m==='qty');
+  document.getElementById('f-input-rev').classList.toggle('active',m==='rev');
+  document.getElementById('f-row-qty').classList.toggle('hidden',m!=='qty');
+  document.getElementById('f-row-rev').classList.toggle('hidden',m!=='rev');
+  // 총매출 입력 모드일 때 판매량 표시 행 토글
+  const dispRow=document.getElementById('f-row-qty-disp');
+  if(dispRow) dispRow.classList.toggle('hidden',m!=='rev');
+  cF();
+}
+function switchTab(t){
+  document.getElementById('pane-f').classList.toggle('hidden',t!=='f');
+  document.getElementById('pane-r').classList.toggle('hidden',t!=='r');
+  document.querySelectorAll('.tabs .tab').forEach((b,i)=>b.classList.toggle('active',(t==='f')===!i));
+}
+function setFM(m){
+  fM=m;
+  document.getElementById('f-ba').classList.toggle('active',m==='album');
+  document.getElementById('f-bt').classList.toggle('active',m==='ticket');
+  document.getElementById('f-pl').textContent=m==='album'?'앨범 판매가':'응모권 가격';
+  document.getElementById('f-cr').style.display=m==='ticket'?'none':'';
+  document.getElementById('f-ag-block').classList.toggle('hidden',m!=='ticket');
+  document.getElementById('f-basic-pg').style.display=m==='ticket'?'none':'';
+  document.getElementById('f-cl').textContent=m==='ticket'?'우리 회사 비용':'총 비용';
+  cF();
+}
+function setRM(m){
+  rM=m;
+  document.getElementById('r-ba').classList.toggle('active',m==='album');
+  document.getElementById('r-bt').classList.toggle('active',m==='ticket');
+  document.getElementById('r-pl').textContent=m==='album'?'앨범 판매가':'응모권 가격';
+  document.getElementById('r-cr').style.display=m==='ticket'?'none':'';
+  document.getElementById('r-ag-block').classList.toggle('hidden',m!=='ticket');
+  document.getElementById('r-basic-pg').style.display=m==='ticket'?'none':'';
+  cR();
+}
+function setRGoal(g){
+  rGoal=g;
+  document.getElementById('r-mode-rate').classList.toggle('active',g==='rate');
+  document.getElementById('r-mode-amt').classList.toggle('active',g==='amt');
+  document.getElementById('r-row-rate').classList.toggle('hidden',g!=='rate');
+  document.getElementById('r-row-amt').classList.toggle('hidden',g!=='amt');
+  document.getElementById('r-rbox-label').textContent=
+    g==='rate'?'목표 이익률 달성을 위한 최소 판매량':'목표 순이익 달성을 위한 최소 판매량';
+  cR();
+}
+
+/* ── 추가 항목 ── */
+function addE(p){const id=++eid;(p==='f'?fEx:rEx).push({id,name:'',amount:0});renderE(p);p==='f'?cF():cR();}
+function removeE(p,id){if(p==='f')fEx=fEx.filter(e=>e.id!==id);else rEx=rEx.filter(e=>e.id!==id);renderE(p);p==='f'?cF():cR();}
+function upE(p,id,k,val){const e=(p==='f'?fEx:rEx).find(e=>e.id===id);if(e)e[k]=val;p==='f'?cF():cR();}
+function renderE(p){
+  const arr=p==='f'?fEx:rEx, el=document.getElementById(p+'-extras');
+  el.innerHTML='';
+  arr.forEach(e=>{
+    const d=document.createElement('div'); d.className='ex-row';
+    d.innerHTML=`<input type="text" placeholder="항목명" value="${e.name}" oninput="upE('${p}',${e.id},'name',this.value)" style="max-width:100px"/><input type="number" placeholder="금액" value="${e.amount||''}" min="0" oninput="upE('${p}',${e.id},'amount',+this.value)"/><span style="font-size:12px;color:var(--hint);flex-shrink:0">원</span><button class="rm" onclick="removeE('${p}',${e.id})">×</button>`;
+    el.appendChild(d);
+  });
+}
+
+/* ── 유틸 ── */
+function fmt(n){return(n<0?'-':'')+Math.abs(Math.round(n)).toLocaleString('ko-KR')+'원';}
+function v(id){return +(document.getElementById(id).value)||0;}
+function sv(id){return document.getElementById(id).value||'';}
+function setEl(id,txt,cls){const el=document.getElementById(id);el.textContent=txt;if(cls)el.className='mval '+cls;}
+function mkRows(items){return items.map(([l,val,cls])=>l==='---'?'<div class="divider"></div>':`<div class="cr ${cls||''}"><span>${l}</span><span class="crv">${val}</span></div>`).join('');}
+
+/* ── 계산 ── */
+function cF(){
+  const sell=v('f-sell'),cost=v('f-cost');
+  const qty=fInputMode==='rev'?(sell>0?v('f-rev-input')/sell:0):v('f-qty');
+  const rev=fInputMode==='rev'?v('f-rev-input'):sell*qty;
+  if(fInputMode==='rev'){
+    const d=document.getElementById('f-qty-disp');
+    if(d) d.textContent=qty>0?Math.round(qty).toLocaleString('ko-KR')+'개':'-';
+  }
+  const labor=v('f-staff')*v('f-hours')*v('f-wage');
+  const sec=v('f-sec'),venue=v('f-venue'),prod=v('f-prod');
+  const exT=fEx.reduce((s,e)=>s+(+e.amount||0),0),opCosts=labor+sec+venue+prod+exT;
+  if(fM==='ticket'){
+    const pg=v('f-pg'),ar=v('f-ar'),pgFee=rev*(pg/100),afterPg=rev-pgFee;
+    const agAmt=afterPg*(ar/100),ourRev=afterPg-agAmt,profit=ourRev-opCosts;
+    const margin=rev>0?(profit/rev*100):0;
+    document.getElementById('f-after-pg').textContent=fmt(afterPg);
+    document.getElementById('f-ag-amt').textContent=fmt(agAmt);
+    document.getElementById('f-our-rev').textContent=fmt(ourRev);
+    document.getElementById('f-rev').textContent=fmt(rev);
+    document.getElementById('f-tc').textContent=fmt(opCosts);
+    setEl('f-profit',fmt(profit),profit>=0?'ok':'ng');
+    setEl('f-margin',margin.toFixed(1)+'%',margin>=0?'ok':'ng');
+    lastFResult={rev,totalCost:opCosts,profit,margin,opCosts};
+    document.getElementById('f-bd').innerHTML=mkRows([
+      ['총 매출 (응모권)',fmt(rev),''],['---','',''],
+      ['PG사 수수료 ('+pg.toFixed(1)+'%)',fmt(pgFee),'ag'],['PG 차감 후 금액',fmt(afterPg),'bld'],['---','',''],
+      ['소속사 정산 ('+ar.toFixed(1)+'%)',fmt(agAmt),'ag'],['우리 회사 귀속 매출',fmt(ourRev),'bld'],['---','',''],
+      ['인건비',fmt(labor),'ind'],['경호비',fmt(sec),'ind'],['대관비',fmt(venue),'ind'],['제작비',fmt(prod),'ind'],
+      ...fEx.filter(e=>e.amount>0).map(e=>[e.name||'추가항목',fmt(e.amount),'ind']),
+      ['---','',''],['우리 회사 비용 합계',fmt(opCosts),'bld'],['순이익 (이익률 '+margin.toFixed(1)+'%)',fmt(profit),'bld'],
+    ]);
+  } else {
+    const pg=v('f-pg-b'),pgFee=rev*(pg/100),gcost=cost*qty,tc=gcost+pgFee+opCosts,profit=rev-tc;
+    const margin=rev>0?(profit/rev*100):0;
+    document.getElementById('f-rev').textContent=fmt(rev);
+    document.getElementById('f-tc').textContent=fmt(tc);
+    setEl('f-profit',fmt(profit),profit>=0?'ok':'ng');
+    setEl('f-margin',margin.toFixed(1)+'%',margin>=0?'ok':'ng');
+    lastFResult={rev,totalCost:tc,profit,margin,opCosts};
+    document.getElementById('f-bd').innerHTML=mkRows([
+      ['총 매출',fmt(rev),''],['---','',''],
+      ['앨범 출고가 합계',fmt(gcost),'ind'],['PG사 수수료 ('+pg.toFixed(1)+'%)',fmt(pgFee),'ind'],
+      ['인건비',fmt(labor),'ind'],['경호비',fmt(sec),'ind'],['대관비',fmt(venue),'ind'],['제작비',fmt(prod),'ind'],
+      ...fEx.filter(e=>e.amount>0).map(e=>[e.name||'추가항목',fmt(e.amount),'ind']),
+      ['---','',''],['총 비용',fmt(tc),'bld'],['순이익 (이익률 '+margin.toFixed(1)+'%)',fmt(profit),'bld'],
+    ]);
+  }
+}
+
+function clearR(){
+  document.getElementById('r-rbox').className='rbox rbox-ok';
+  document.getElementById('r-minqty').textContent='-';
+  document.getElementById('r-rsub2').textContent='판매가와 비용을 입력하면 자동 계산됩니다';
+  ['r-minrev','r-fc','r-uc'].forEach(id=>document.getElementById(id).textContent='-');
+  document.getElementById('r-bd').innerHTML='';
+  lastRResult={};
+}
+
+function cR(){
+  const sell=v('r-sell'),cost=v('r-cost'),target=v('r-target'),profitGoal=v('r-profit-goal');
+  const labor=v('r-staff')*v('r-hours')*v('r-wage');
+  const sec=v('r-sec'),venue=v('r-venue'),prod=v('r-prod');
+  const exT=rEx.reduce((s,e)=>s+(+e.amount||0),0),opCosts=labor+sec+venue+prod+exT;
+  const tRate=target/100,rb=document.getElementById('r-rbox'),bd=document.getElementById('r-bd');
+  if(sell<=0){clearR();return;}
+  if(rGoal==='amt'&&profitGoal<=0){clearR();return;}
+
+  function warn(msg,hint){
+    rb.className='rbox rbox-warn';
+    document.getElementById('r-minqty').textContent='달성 불가';
+    document.getElementById('r-rsub2').textContent=msg;
+    ['r-minrev','r-fc','r-uc'].forEach(id=>document.getElementById(id).textContent='-');
+    bd.innerHTML=hint?mkRows([['달성 가능한 최대 이익률',hint,'ag']]):'';
+    lastRResult={};
+  }
+  function showResult(minQty,minRev,profit,margin,rows){
+    rb.className='rbox rbox-ok';
+    document.getElementById('r-minqty').textContent=minQty.toLocaleString('ko-KR')+'개';
+    document.getElementById('r-rsub2').textContent='실제 이익률 '+margin.toFixed(1)+'%  ·  순이익 '+fmt(profit);
+    document.getElementById('r-minrev').textContent=fmt(minRev);
+    document.getElementById('r-fc').textContent=fmt(opCosts);
+    bd.innerHTML=mkRows(rows);
+    lastRResult={minQty,minRev,profit,margin,opCosts};
+  }
+
+  if(rM==='ticket'){
+    const pg=v('r-pg'),ar=v('r-ar')/100,pgRate=pg/100;
+    const unitAfterPg=sell*(1-pgRate),unitOurRev=unitAfterPg*(1-ar);
+    if(unitOurRev<=0){warn('소속사 정산 후 귀속 금액이 없습니다.');return;}
+    document.getElementById('r-uc').textContent=fmt(unitOurRev);
+    const maxMargin=sell>0?(unitOurRev/sell*100):0;
+    const baseRows=[
+      ['응모권 판매가',fmt(sell),''],['---','',''],
+      ['PG 차감 ('+pg.toFixed(1)+'%)',fmt(sell*pgRate),'ag'],['PG 차감 후 단가',fmt(unitAfterPg),''],['---','',''],
+      ['소속사 정산 ('+(ar*100).toFixed(1)+'%)',fmt(unitAfterPg*ar),'ag'],['우리 귀속 단가',fmt(unitOurRev),'bld'],['---','',''],
+      ['고정 운영 비용',fmt(opCosts),''],
+    ];
+    if(rGoal==='amt'){
+      const minQty=Math.ceil((profitGoal+opCosts)/unitOurRev);
+      const minRev=sell*minQty,profit=unitOurRev*minQty-opCosts,margin=minRev>0?(profit/minRev*100):0;
+      showResult(minQty,minRev,profit,margin,[...baseRows,['목표 순이익',fmt(profitGoal),''],['최소 판매량',minQty.toLocaleString('ko-KR')+'개','bld']]);
+    } else {
+      const netPerUnit=unitOurRev-sell*tRate;
+      if(netPerUnit<=0){warn('목표 이익률 달성이 불가합니다.',maxMargin.toFixed(1)+'%');return;}
+      const minQty=opCosts>0?Math.ceil(opCosts/netPerUnit):1;
+      const minRev=sell*minQty,profit=unitOurRev*minQty-opCosts,margin=minRev>0?(profit/minRev*100):0;
+      showResult(minQty,minRev,profit,margin,[...baseRows,['목표 이익률',target.toFixed(1)+'%',''],['최소 판매량',minQty.toLocaleString('ko-KR')+'개','bld']]);
+    }
+  } else {
+    const pg=v('r-pg-b'),pgRate=pg/100,uGc=cost,uPg=sell*pgRate,uContrib=sell-uGc-uPg;
+    if(uContrib<=0){warn('판매가가 출고가+PG 수수료보다 낮습니다.');return;}
+    document.getElementById('r-uc').textContent=fmt(uContrib);
+    const maxMargin=sell>0?(uContrib/sell*100):0;
+    const baseRows=[
+      ['판매가',fmt(sell),''],['- 출고가',fmt(uGc),'ind'],['- PG수수료 ('+pg.toFixed(1)+'%)',fmt(uPg),'ind'],
+      ['= 개당 공헌이익',fmt(uContrib),'bld'],['---','',''],
+      ['최대 달성 이익률',maxMargin.toFixed(1)+'%',''],['고정 운영 비용',fmt(opCosts),''],
+    ];
+    if(rGoal==='amt'){
+      const minQty=Math.ceil((profitGoal+opCosts)/uContrib);
+      const minRev=sell*minQty,tc=uGc*minQty+minRev*pgRate+opCosts,profit=minRev-tc,margin=minRev>0?(profit/minRev*100):0;
+      showResult(minQty,minRev,profit,margin,[...baseRows,['목표 순이익',fmt(profitGoal),''],['최소 판매량',minQty.toLocaleString('ko-KR')+'개','bld']]);
+    } else {
+      const netPerUnit=uContrib-sell*tRate;
+      if(netPerUnit<=0){warn('목표 이익률 달성이 불가합니다.',maxMargin.toFixed(1)+'%');return;}
+      const minQty=opCosts>0?Math.ceil(opCosts/netPerUnit):1;
+      const minRev=sell*minQty,tc=uGc*minQty+minRev*pgRate+opCosts,profit=minRev-tc,margin=minRev>0?(profit/minRev*100):0;
+      showResult(minQty,minRev,profit,margin,[...baseRows,['목표 이익률',target.toFixed(1)+'%',''],['최소 판매량',minQty.toLocaleString('ko-KR')+'개','bld']]);
+    }
+  }
+}
+
+/* ── 저장 / 불러오기 ── */
+function getRecords(){try{return JSON.parse(localStorage.getItem('calc_records')||'[]');}catch{return[];}}
+function setRecords(r){localStorage.setItem('calc_records',JSON.stringify(r));}
+
+function getCurrentInputs(){
+  const tab=document.getElementById('pane-f').classList.contains('hidden')?'reverse':'forward';
+  return{
+    tab,
+    fMode:fM, fInputMode, fSell:v('f-sell'), fCost:v('f-cost'), fQty:v('f-qty'), fRevInput:v('f-rev-input'),
+    fPg:fM==='ticket'?v('f-pg'):v('f-pg-b'), fAr:v('f-ar'),
+    fStaff:v('f-staff'), fHours:v('f-hours'), fWage:v('f-wage'),
+    fSec:v('f-sec'), fVenue:v('f-venue'), fProd:v('f-prod'),
+    fExtras:JSON.parse(JSON.stringify(fEx)),
+    rMode:rM, rSell:v('r-sell'), rCost:v('r-cost'),
+    rGoal, rTarget:v('r-target'), rProfitGoal:v('r-profit-goal'),
+    rPg:rM==='ticket'?v('r-pg'):v('r-pg-b'), rAr:v('r-ar'),
+    rStaff:v('r-staff'), rHours:v('r-hours'), rWage:v('r-wage'),
+    rSec:v('r-sec'), rVenue:v('r-venue'), rProd:v('r-prod'),
+    rExtras:JSON.parse(JSON.stringify(rEx)),
+    fResult:Object.assign({},lastFResult),
+    rResult:Object.assign({},lastRResult),
+  };
+}
+
+function saveRecord(){
+  const code=sv('product-code').trim();
+  if(!code){toast('상품코드를 입력해주세요');return;}
+  const records=getRecords();
+  const now=new Date();
+  const ts=now.toISOString().slice(0,19).replace('T',' ');
+  records.unshift({id:Date.now(), code, ts, inputs:getCurrentInputs()});
+  setRecords(records);
+  renderRecords();
+  toast('저장되었습니다: '+code);
+}
+
+function loadRecord(id){
+  const rec=getRecords().find(r=>r.id===id);
+  if(!rec) return;
+  const inp=rec.inputs;
+  document.getElementById('product-code').value=rec.code;
+
+  // forward
+  fEx=inp.fExtras||[];
+  setFM(inp.fMode||'album');
+  const setv=(eid,val)=>{const el=document.getElementById(eid);if(el)el.value=val||'';};
+  setFInput(inp.fInputMode||'qty');
+  setv('f-sell',inp.fSell); setv('f-cost',inp.fCost); setv('f-qty',inp.fQty); setv('f-rev-input',inp.fRevInput);
+  setv('f-pg',inp.fPg); setv('f-pg-b',inp.fPg); setv('f-ar',inp.fAr||50);
+  setv('f-staff',inp.fStaff); setv('f-hours',inp.fHours); setv('f-wage',inp.fWage||11000);
+  setv('f-sec',inp.fSec); setv('f-venue',inp.fVenue); setv('f-prod',inp.fProd);
+  renderE('f'); cF();
+
+  // reverse
+  rEx=inp.rExtras||[];
+  setRM(inp.rMode||'album');
+  setRGoal(inp.rGoal||'rate');
+  setv('r-sell',inp.rSell); setv('r-cost',inp.rCost);
+  setv('r-target',inp.rTarget||30); setv('r-profit-goal',inp.rProfitGoal);
+  setv('r-pg',inp.rPg); setv('r-pg-b',inp.rPg); setv('r-ar',inp.rAr||50);
+  setv('r-staff',inp.rStaff); setv('r-hours',inp.rHours); setv('r-wage',inp.rWage||11000);
+  setv('r-sec',inp.rSec); setv('r-venue',inp.rVenue); setv('r-prod',inp.rProd);
+  renderE('r'); cR();
+
+  // 탭 이동
+  switchTab(inp.tab==='reverse'?'r':'f');
+  window.scrollTo({top:0,behavior:'smooth'});
+  toast('불러왔습니다: '+rec.code);
+}
+
+function deleteRecord(id){
+  if(!confirm('삭제할까요?')) return;
+  setRecords(getRecords().filter(r=>r.id!==id));
+  renderRecords();
+  toast('삭제되었습니다');
+}
+
+function renderRecords(){
+  const records=getRecords();
+  const el=document.getElementById('records-list');
+  document.getElementById('rec-count').textContent=records.length?`(${records.length}건)`:'';
+  if(!records.length){el.innerHTML=`<div class="empty-msg">저장된 항목이 없습니다</div>`;return;}
+  el.innerHTML=`<table class="records-table">
+    <thead><tr>
+      <th>상품코드</th><th>저장일시</th><th>탭</th><th>판매방식</th>
+      <th style="text-align:right">총 매출 / 최소 매출</th>
+      <th style="text-align:right">순이익 / 최소 판매량</th>
+      <th style="text-align:right">이익률</th>
+      <th></th>
+    </tr></thead>
+    <tbody>${records.map(r=>{
+      const inp=r.inputs;
+      const isFwd=inp.tab!=='reverse';
+      const fr=inp.fResult||{}, rr=inp.rResult||{};
+      const rev=isFwd?(fr.rev!=null?fmt(fr.rev):'-'):(rr.minRev!=null?fmt(rr.minRev):'-');
+      const profit=isFwd?(fr.profit!=null?fmt(fr.profit):'-'):(rr.minQty!=null?rr.minQty.toLocaleString('ko-KR')+'개':'-');
+      const margin=isFwd?(fr.margin!=null?fr.margin.toFixed(1)+'%':'-'):(rr.margin!=null?rr.margin.toFixed(1)+'%':'-');
+      const tabTag=isFwd?'<span class="tag tag-fwd">매출계산</span>':'<span class="tag tag-rev">역산</span>';
+      const modeTag=inp.fMode==='ticket'?'<span class="tag tag-ticket">응모권</span>':'<span class="tag tag-album">앨범</span>';
+      return `<tr>
+        <td><span class="code-pill">${r.code}</span></td>
+        <td style="color:var(--muted)">${r.ts}</td>
+        <td>${tabTag}</td>
+        <td>${modeTag}</td>
+        <td style="text-align:right;font-variant-numeric:tabular-nums">${rev}</td>
+        <td style="text-align:right;font-variant-numeric:tabular-nums">${profit}</td>
+        <td style="text-align:right">${margin}</td>
+        <td style="white-space:nowrap;display:flex;gap:6px">
+          <button class="tbl-btn load" onclick="loadRecord(${r.id})">불러오기</button>
+          <button class="tbl-btn del" onclick="deleteRecord(${r.id})">삭제</button>
+        </td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+/* ── CSV 다운로드 ── */
+function downloadByPrefix(){
+  const prefix=document.getElementById('dl-prefix').value.trim();
+  const records=getRecords().filter(r=>!prefix||r.code.startsWith(prefix));
+  if(!records.length){toast(prefix?`'${prefix}' 로 시작하는 항목이 없습니다`:'저장된 항목이 없습니다');return;}
+  const headers=['상품코드','저장일시','탭','판매방식','판매가','출고가','판매량',
+    'PG수수료(%)','소속사정산(%)','아르바이트인원','근무시간','시급',
+    '경호비','대관비','제작비','기타비용합계',
+    '총매출_최소매출','총비용_고정비용','순이익_최소판매량','이익률'];
+  const rows=records.map(r=>{
+    const inp=r.inputs, isFwd=inp.tab!=='reverse';
+    const fr=inp.fResult||{}, rr=inp.rResult||{};
+    const exT=(isFwd?inp.fExtras:inp.rExtras||[]).reduce((s,e)=>s+(+e.amount||0),0);
+    return [
+      r.code, r.ts,
+      isFwd?'매출계산':'역산',
+      (isFwd?inp.fMode:inp.rMode)==='ticket'?'응모권':'앨범',
+      isFwd?inp.fSell:inp.rSell,
+      isFwd?inp.fCost:inp.rCost,
+      isFwd?inp.fQty:'',
+      isFwd?inp.fPg:inp.rPg,
+      isFwd?inp.fAr:inp.rAr,
+      isFwd?inp.fStaff:inp.rStaff,
+      isFwd?inp.fHours:inp.rHours,
+      isFwd?inp.fWage:inp.rWage,
+      isFwd?inp.fSec:inp.rSec,
+      isFwd?inp.fVenue:inp.rVenue,
+      isFwd?inp.fProd:inp.rProd,
+      exT,
+      isFwd?(fr.rev??''):(rr.minRev??''),
+      isFwd?(fr.totalCost??''):(rr.opCosts??''),
+      isFwd?(fr.profit??''):(rr.minQty??''),
+      isFwd?(fr.margin!=null?fr.margin.toFixed(1)+'%':''):(rr.margin!=null?rr.margin.toFixed(1)+'%':''),
+    ].map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',');
+  });
+  const bom='\uFEFF';
+  const csv=bom+[headers.join(','),...rows].join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url;
+  a.download=`calc_${prefix||'all'}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  toast(`${records.length}건 다운로드 완료`);
+}
+
+/* ── 토스트 ── */
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2500);
+}
+
+cF(); cR(); renderRecords();
+</script>
+</body>
+</html>
